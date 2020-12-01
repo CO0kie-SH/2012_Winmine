@@ -58,6 +58,7 @@ const LPBYTE G_GAMEMAP = (LPBYTE)0x1005360;
 
 const char* szGameInfo[] = { "难度","雷数","高度","宽度",
 "窗口X","窗口Y","时间","安全块" ,"已点块" };
+const char* szGameIndex[] = { "①","②","③","④","⑤","⑥","⑦","⑧","⑨" };
 
 //定义游戏信息结构体
 typedef struct _WinMineInfo
@@ -120,11 +121,10 @@ BOOL MyProcess::Read(DWORD add,LPVOID saveAdd, SIZE_T size)
 	return ReadProcessMemory(hProcess, (LPCVOID)add, saveAdd, size, 0);
 }
 
+MyProcess myPro;
 
-int main()
+int show()
 {
-	std::cout << "Hello World!\n";
-	MyProcess myPro;
 	myPro.ReadInfo();
 
 	LPDWORD lpInfo = (LPDWORD)&myPro.GameInfo;
@@ -132,21 +132,49 @@ int main()
 	{
 		printf_s("%s\t%lu\n", szGameInfo[i], i < 6 ? lpInfo[i] : lpInfo[i + InfoSizeNULL]);
 	}
-	
 
-	DWORD mapInfo[3] = { 0 };
+	DWORD mapInfo[4] = { 0 };
 	myPro.Read(0x1005330, (LPVOID)mapInfo, sizeof(mapInfo));
 	BYTE map[1024];
 	if (myPro.ReadMap(map, sizeof(map)) == 0)
-		return -1;
-	for (DWORD height = 1, add = 0; height <= mapInfo[1]; height++, add += 0x20)
+		return -2;
+
+	//计算宽度，并格式化输出
+	mapInfo[3] = mapInfo[1] + 2;
+	printf("0x%08X\t%02lu|", 0, 0);
+	for (DWORD i = 1; i <= mapInfo[1]; i++)
 	{
-		printf("0x%X\t", (DWORD)G_GAMEMAP + add);
-		for (DWORD i = 1; i <= mapInfo[2]; i++)
+		printf("%02d|", i);
+	}
+	printf("\n");
+
+	//循环地图数组
+	//定义高度从1起，≤高度，add表示偏移，从0起，每次循环加(宽度+2)*2
+	for (DWORD height = 1, add = 0; height <= mapInfo[2]; add += mapInfo[3] * 2)
+	{
+		printf("0x%08X\t%02lu|", (DWORD)G_GAMEMAP + add, height++);
+
+		//循环宽度，定义宽度从1起，≤宽度
+		for (DWORD i = 1; i <= mapInfo[1]; i++)
 		{
-			printf("%02X ", map[i + add]);
+			BYTE& buf = map[i + add];
+			if (buf == 0x8F)
+				printf("雷|");
+			else if (buf > 0x40 && buf < 0x50)
+				printf("%s|", szGameIndex[buf - 0x40]);
+			else
+				printf("  |");
+			//printf("%02X|", buf);
 		}
 		printf("\n");
 	}
+	return 0;
+}
+
+int main()
+{
+	std::cout << "Hello World!欢迎使用CO0kie丶的扫雷提示控制台！\n";
+	std::cout << "输入'show'可查看雷坐标；输入'go'可一键扫雷；'exit'退出程序！\n";
+	show();
 	return 0;
 }
