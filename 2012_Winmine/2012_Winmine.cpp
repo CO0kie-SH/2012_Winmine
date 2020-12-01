@@ -13,7 +13,7 @@ int g1005360_矩阵 = 0x1005360;
 
 /* 初始化矩阵（） */
 void 初始化矩阵_(HDC 参_DC_句柄) {
-	int 局部4_X = 1;
+	int 局部4_X = 0;
 	int 局部8_Y;
 	int 局部C_高度;
 
@@ -95,12 +95,10 @@ private:
 	HANDLE hProcess;
 };
 
-MyProcess::MyProcess()
+MyProcess::MyProcess():hProcess(0),hWnd(0)
 {
 	m_InfoSize = sizeof(WinMineInfo);
 	ZeroMemory(&GameInfo, m_InfoSize);
-	hProcess = 0;
-	hWnd = 0;
 }
 
 MyProcess::~MyProcess()
@@ -120,7 +118,6 @@ BOOL MyProcess::Init()
 	GetWindowThreadProcessId(hWnd, &PID);
 	if (PID < 5) {
 		puts("没有找到扫雷窗口，请检查是否开启！");
-		system("PAUSE");
 		hProcess = 0;
 		hWnd = 0;
 	}
@@ -153,13 +150,12 @@ void go(DWORD x, DWORD y)
 {
 	if (myPro.hWnd > 0)
 	{
-		x = x * 16;
 		//此处的55是来自反汇编时，固定偏移。详见本页代码第21行
 		y = 55 + (y - 1) * 16;
-		DWORD pos = x + y * 65536;
-		PostMessageA(myPro.hWnd, 513, 1, pos);
-		PostMessageA(myPro.hWnd, 513, 1, pos);
-		PostMessageA(myPro.hWnd, 514, 0, pos);
+		y = x * 16 + y * 65536;
+		PostMessageA(myPro.hWnd, 513, 1, y);
+		PostMessageA(myPro.hWnd, 513, 1, y);
+		PostMessageA(myPro.hWnd, 514, 0, y);
 	}
 }
 
@@ -172,7 +168,7 @@ int show(bool att = false)
 	BYTE map[1024];
 	if (myPro.GameInfo.dwWidth != 0) {
 		wsprintfA((char*)map, "mode %d,%d",
-			myPro.GameInfo.dwWidth * 5 + 20, myPro.GameInfo.dwHeight + 22);
+			myPro.GameInfo.dwWidth * 5, myPro.GameInfo.dwHeight + 22);
 		system((char*)map);
 	}
 
@@ -180,7 +176,7 @@ int show(bool att = false)
 	LPDWORD lpInfo = (LPDWORD)&myPro.GameInfo;
 	for (int i = 0; i < 9; i++)
 	{
-		printf_s("%s\t%lu\n", szGameInfo[i], i < 6 ? lpInfo[i] : lpInfo[i + InfoSizeNULL]);
+		printf("%s\t%lu\n", szGameInfo[i], i < 6 ? lpInfo[i] : lpInfo[i + InfoSizeNULL]);
 	}
 
 	//获取游戏状态
@@ -219,7 +215,6 @@ int show(bool att = false)
 			else
 				printf("　|");
 			//printf("%02X|", buf);
-			
 		}
 		printf("\n");
 	}
@@ -228,7 +223,7 @@ int show(bool att = false)
 
 int main()
 {
-	char buff[1024] = "Hello World!欢迎使用CO0kie丶的扫雷提示控制台！\n";
+	char buff[260] = "~欢迎使用CO0kie丶的扫雷提示控制台！\n";
 	SetConsoleTitleA(buff);
 	std::cout << buff;
 	do
