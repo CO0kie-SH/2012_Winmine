@@ -228,9 +228,9 @@ int show(bool att = false)
 
 int main()
 {
-	std::cout << "Hello World!欢迎使用CO0kie丶的扫雷提示控制台！\n";
-	
-	char buff[1024];
+	char buff[1024] = "Hello World!欢迎使用CO0kie丶的扫雷提示控制台！\n";
+	SetConsoleTitleA(buff);
+	std::cout << buff;
 	do
 	{
 		std::cout << "\n输入'show'可查看雷坐标；输入'go'可一键扫雷；'exit'退出程序！\n" << "请输入命令：";
