@@ -82,12 +82,14 @@ public:
 	MyProcess();
 	~MyProcess();
 
+	BOOL Init();
 	BOOL ReadInfo();
 	BOOL ReadMap(LPBYTE map, SIZE_T size);
 	BOOL Read(DWORD add, LPVOID saveAdd, SIZE_T size);
 public:
 	//游戏信息
 	WinMineInfo GameInfo;
+	HWND hWnd;
 private:
 	SIZE_T m_InfoSize;
 	HANDLE hProcess;
@@ -97,13 +99,37 @@ MyProcess::MyProcess()
 {
 	m_InfoSize = sizeof(WinMineInfo);
 	ZeroMemory(&GameInfo, m_InfoSize);
-	hProcess = OpenProcess(PROCESS_VM_READ, 0, 0x43D8);
+	hProcess = 0;
+	hWnd = 0;
 }
 
 MyProcess::~MyProcess()
 {
 	if (hProcess > 0)
 		CloseHandle(hProcess);
+}
+
+BOOL MyProcess::Init()
+{
+	ZeroMemory(&GameInfo, m_InfoSize);
+	if (hProcess > 0)
+		CloseHandle(hProcess);
+	//获取窗口句柄
+	hWnd = FindWindowA("扫雷", "扫雷");
+	DWORD PID = 0;
+	GetWindowThreadProcessId(hWnd, &PID);
+	if (PID < 5) {
+		puts("没有找到扫雷窗口，请检查是否开启！");
+		system("PAUSE");
+		hProcess = 0;
+		hWnd = 0;
+	}
+	else
+	{
+		hProcess = OpenProcess(PROCESS_VM_READ, 0, PID);
+		ReadInfo();
+	}
+	return hProcess > 0;
 }
 
 BOOL MyProcess::ReadInfo()
@@ -123,19 +149,43 @@ BOOL MyProcess::Read(DWORD add,LPVOID saveAdd, SIZE_T size)
 
 MyProcess myPro;
 
-int show()
+void go(DWORD x, DWORD y)
 {
-	myPro.ReadInfo();
+	if (myPro.hWnd > 0)
+	{
+		x = x * 16;
+		//此处的55是来自反汇编时，固定偏移。详见本页代码第21行
+		y = 55 + (y - 1) * 16;
+		DWORD pos = x + y * 65536;
+		PostMessageA(myPro.hWnd, 513, 1, pos);
+		PostMessageA(myPro.hWnd, 513, 1, pos);
+		PostMessageA(myPro.hWnd, 514, 0, pos);
+	}
+}
 
+int show(bool att = false)
+{
+	if (!myPro.Init())
+		return -1;
+
+	//将界面缩放，保证数据显示
+	BYTE map[1024];
+	if (myPro.GameInfo.dwWidth != 0) {
+		wsprintfA((char*)map, "mode %d,%d",
+			myPro.GameInfo.dwWidth * 5 + 20, myPro.GameInfo.dwHeight + 22);
+		system((char*)map);
+	}
+
+	//循环输出游戏信息
 	LPDWORD lpInfo = (LPDWORD)&myPro.GameInfo;
 	for (int i = 0; i < 9; i++)
 	{
 		printf_s("%s\t%lu\n", szGameInfo[i], i < 6 ? lpInfo[i] : lpInfo[i + InfoSizeNULL]);
 	}
 
+	//获取游戏状态
 	DWORD mapInfo[4] = { 0 };
 	myPro.Read(0x1005330, (LPVOID)mapInfo, sizeof(mapInfo));
-	BYTE map[1024];
 	if (myPro.ReadMap(map, sizeof(map)) == 0)
 		return -2;
 
@@ -162,9 +212,14 @@ int show()
 				printf("雷|");
 			else if (buf > 0x40 && buf < 0x50)
 				printf("%s|", szGameIndex[buf - 0x41]);
+			else if (buf == 0x0F) {
+				printf("√|");
+				if (att) go(i, height - 1);
+			}
 			else
-				printf("  |");
+				printf("　|");
 			//printf("%02X|", buf);
+			
 		}
 		printf("\n");
 	}
@@ -174,6 +229,7 @@ int show()
 int main()
 {
 	std::cout << "Hello World!欢迎使用CO0kie丶的扫雷提示控制台！\n";
+	
 	char buff[1024];
 	do
 	{
@@ -184,9 +240,9 @@ int main()
 		{
 			show();
 		}
-		else if (strcmp(buff, "go"))
+		else if (strcmp(buff, "go") == 0)
 		{
-
+			show(true);
 		}
 	} while (strcmp(buff, "exit") != 0);
 	return 0;
