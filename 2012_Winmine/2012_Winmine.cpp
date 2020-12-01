@@ -139,12 +139,12 @@ int main()
 	BYTE map[1024];
 	if (myPro.ReadMap(map, sizeof(map)) == 0)
 		return -1;
-	for (DWORD height = 1, add = (DWORD)G_GAMEMAP; height <= mapInfo[1]; height++, add += 0x20)
+	for (DWORD height = 1, add = 0; height <= mapInfo[1]; height++, add += 0x20)
 	{
-		printf("0x%X\t", add);
+		printf("0x%X\t", (DWORD)G_GAMEMAP + add);
 		for (DWORD i = 1; i <= mapInfo[2]; i++)
 		{
-			printf("%02X ", map[i]);
+			printf("%02X ", map[i + add]);
 		}
 		printf("\n");
 	}
