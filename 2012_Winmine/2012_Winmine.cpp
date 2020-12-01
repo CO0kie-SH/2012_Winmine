@@ -149,8 +149,8 @@ int show()
 	printf("\n");
 
 	//循环地图数组
-	//定义高度从1起，≤高度，add表示偏移，从0起，每次循环加(宽度+2)*2
-	for (DWORD height = 1, add = 0; height <= mapInfo[2]; add += mapInfo[3] * 2)
+	//定义高度从1起，≤高度，add表示偏移，从0起，每次循环加32
+	for (DWORD height = 1, add = 0; height <= mapInfo[2]; add += 0x20)
 	{
 		printf("0x%08X\t%02lu|", (DWORD)G_GAMEMAP + add, height++);
 
@@ -161,7 +161,7 @@ int show()
 			if (buf == 0x8F)
 				printf("雷|");
 			else if (buf > 0x40 && buf < 0x50)
-				printf("%s|", szGameIndex[buf - 0x40]);
+				printf("%s|", szGameIndex[buf - 0x41]);
 			else
 				printf("  |");
 			//printf("%02X|", buf);
@@ -174,7 +174,20 @@ int show()
 int main()
 {
 	std::cout << "Hello World!欢迎使用CO0kie丶的扫雷提示控制台！\n";
-	std::cout << "输入'show'可查看雷坐标；输入'go'可一键扫雷；'exit'退出程序！\n";
-	show();
+	char buff[1024];
+	do
+	{
+		std::cout << "\n输入'show'可查看雷坐标；输入'go'可一键扫雷；'exit'退出程序！\n" << "请输入命令：";
+		std::cin >> buff;
+
+		if (strcmp(buff, "show") == 0)
+		{
+			show();
+		}
+		else if (strcmp(buff, "go"))
+		{
+
+		}
+	} while (strcmp(buff, "exit") != 0);
 	return 0;
 }
